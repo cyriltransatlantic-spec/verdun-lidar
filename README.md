@@ -19,7 +19,7 @@ All tiles come from the IGN Géoplateforme WMTS service (`https://data.geopf.fr/
 |---|---|
 | LiDAR relief | `IGNF_LIDAR-HD_MNT_ELEVATION.ELEVATIONGRIDCOVERAGE.SHADOW` (zoom 18 max) |
 | Satellite | `ORTHOIMAGERY.ORTHOPHOTOS` |
-| IGN map | `GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2` |
+| 1916 base maps | Verdun Nord sheet (`...EDUGEO.VERDUN_NORD_fronts_francais_20K` or `...EDUGEO.VERDUN_NORD_organisations_defensives_20K`) with `GEOGRAPHICALGRIDSYSTEMS.DOUAUMONT_FORT_positions_5K_18mai1916` on top |
 | Photos 1950 to 1965 | `ORTHOIMAGERY.ORTHOPHOTOS.1950-1965` |
 | État major | `GEOGRAPHICALGRIDSYSTEMS.ETATMAJOR40` |
 
