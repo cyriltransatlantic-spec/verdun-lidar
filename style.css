@@ -82,6 +82,7 @@ select, input[type=search], input:not([type]), textarea {
 .estimate.warn { color: var(--danger); }
 progress { width: 100%; height: 10px; accent-color: var(--accent); }
 
+.overlay-group { margin: 12px 0 2px; font-size: 14px; color: var(--accent); }
 .overlay-row { display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--line); }
 .overlay-row input[type=range] { grid-column: 2; accent-color: var(--accent); }
 
