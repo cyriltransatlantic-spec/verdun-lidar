@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1b1f17">
+<title>Verdun LiDAR</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="vendor/leaflet/leaflet.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="map"></div>
+
+<div id="status" class="chip hidden"></div>
+<div id="toast" class="chip hidden"></div>
+
+<div id="crosshair" class="hidden"></div>
+<div id="placebar" class="bar hidden">
+  <button id="placeCancel" class="btn ghost">Cancel</button>
+  <button id="placeGps" class="btn ghost hidden">At my position</button>
+  <button id="placeOk" class="btn primary">Mark here</button>
+</div>
+
+<div id="fabs">
+  <button id="btnLayers" class="fab" aria-label="Layers">
+    <svg viewBox="0 0 24 24"><path d="M12 3 2 8l10 5 10-5-10-5Zm-8 9 8 4 8-4M4 16l8 4 8-4"/></svg>
+  </button>
+  <button id="btnPoints" class="fab" aria-label="My points">
+    <svg viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21Z"/><circle cx="12" cy="9.5" r="2.5"/></svg>
+  </button>
+  <button id="btnOffline" class="fab" aria-label="Offline maps">
+    <svg viewBox="0 0 24 24"><path d="M12 3v12m0 0-5-5m5 5 5-5M4 19h16"/></svg>
+  </button>
+  <button id="btnAdd" class="fab" aria-label="Add point">
+    <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+  </button>
+  <button id="btnLocate" class="fab big" aria-label="My position">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.5"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3"/><circle cx="12" cy="12" r="7.5"/></svg>
+  </button>
+</div>
+
+<div id="blend" class="bar">
+  <button id="modeSat" class="seg">Satellite</button>
+  <input id="lidarOpacity" type="range" min="0" max="100" step="5" aria-label="LiDAR blend">
+  <button id="modeLidar" class="seg">LiDAR</button>
+</div>
+
+<!-- Layers sheet -->
+<section id="sheetLayers" class="sheet hidden">
+  <header><h2>Layers</h2><button class="close" data-close>&times;</button></header>
+  <h3>Base map under the LiDAR</h3>
+  <div class="radios">
+    <label><input type="radio" name="base" value="satellite"> Satellite (IGN aerial photos)</label>
+    <label><input type="radio" name="base" value="plan"> IGN map</label>
+  </div>
+  <h3>Historical overlays</h3>
+  <div id="overlayList"></div>
+  <p class="hint">To add a WWI trench map, see <code>overlays.js</code>.</p>
+  <p class="hint">Data: IGN Géoplateforme (LiDAR HD, BD ORTHO, Plan IGN, historical maps). Open Licence 2.0.</p>
+</section>
+
+<!-- Points sheet -->
+<section id="sheetPoints" class="sheet hidden">
+  <header><h2>My points <span id="pointCount" class="muted"></span></h2><button class="close" data-close>&times;</button></header>
+  <div class="row wrap">
+    <button id="markMe" class="btn primary">Mark my position</button>
+    <button id="exportGpx" class="btn">Export GPX</button>
+    <button id="exportJson" class="btn">Export GeoJSON</button>
+    <label class="btn">Import<input id="importFile" type="file" accept=".gpx,.geojson,.json,application/json,application/gpx+xml" hidden></label>
+  </div>
+  <input id="pointSearch" type="search" placeholder="Search points">
+  <ul id="pointList"></ul>
+</section>
+
+<!-- Offline sheet -->
+<section id="sheetOffline" class="sheet hidden">
+  <header><h2>Offline maps</h2><button class="close" data-close>&times;</button></header>
+  <p class="hint">Download over WiFi before going into the forest. Saved tiles are used automatically when there is no signal.</p>
+  <h3>Area</h3>
+  <div class="radios">
+    <label><input type="radio" name="area" value="view" checked> What is on screen now</label>
+    <label><input type="radio" name="area" value="battlefield"> Whole Verdun battlefield</label>
+  </div>
+  <h3>Layers</h3>
+  <div id="dlLayers" class="radios"></div>
+  <h3>Detail</h3>
+  <select id="dlZoom">
+    <option value="15">Low (zoom 15)</option>
+    <option value="16" selected>Medium (zoom 16)</option>
+    <option value="17">High (zoom 17, trenches visible)</option>
+    <option value="18">Maximum (zoom 18)</option>
+  </select>
+  <p id="dlEstimate" class="estimate"></p>
+  <div class="row">
+    <button id="dlStart" class="btn primary">Download</button>
+    <button id="dlCancel" class="btn hidden">Stop</button>
+  </div>
+  <progress id="dlProgress" class="hidden" max="1" value="0"></progress>
+  <p id="dlStatus" class="hint"></p>
+  <h3>Storage</h3>
+  <p id="storageInfo" class="hint"></p>
+  <button id="dlClear" class="btn danger">Delete all offline tiles</button>
+</section>
+
+<!-- Point editor -->
+<dialog id="pointDialog">
+  <form method="dialog" id="pointForm">
+    <h2 id="pointDialogTitle">New point</h2>
+    <label>Name<input id="pName" required maxlength="80" autocomplete="off"></label>
+    <label>Note<textarea id="pNote" rows="3" maxlength="1000"></textarea></label>
+    <div id="pColors" class="colors"></div>
+    <p id="pCoords" class="hint mono"></p>
+    <div class="row end">
+      <button type="button" id="pDelete" class="btn danger">Delete</button>
+      <span class="grow"></span>
+      <button type="button" id="pCancel" class="btn ghost">Cancel</button>
+      <button type="submit" class="btn primary">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<script src="vendor/leaflet/leaflet.js"></script>
+<script src="overlays.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
