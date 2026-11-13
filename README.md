@@ -6,7 +6,10 @@ A map app for walking the Verdun battlefield, installed on Android from Chrome:
 * Live GPS position with an accuracy circle and a compass heading. The screen stays on while GPS is active.
 * Named points: tap **+** and aim the crosshair, long press the map, or use **Mark my position**. Points are listed by distance and direction from you, and export to GPX or GeoJSON (both can also be imported).
 * Offline maps: the download button saves tiles for the visible area or the whole battlefield, so the map works with no signal.
-* Historical overlays: aerial photos from 1950 to 1965, plus the État major map from 1820 to 1866. You can add your own WWI map (see below).
+* Historical overlays, drawn on top of the LiDAR with an opacity slider each:
+  * Eight IGN WWI military maps of Verdun (front lines 1914 and February 1916, offensives 1916 to 1917, defensive works, Douaumont April 1916, Fort Douaumont trenches 18 May 1916). These are the layers of the macarte.ign.fr map "Tranchée de fort Douaumont", clipped to the battlefield area the app covers.
+  * Aerial photos from 1950 to 1965, plus the État major map from 1820 to 1866.
+  * You can add your own scanned map (see below).
 
 ## Data sources
 
