@@ -52,6 +52,7 @@ function makeLayer(def, extra = {}) {
     crossOrigin: def.type === 'xyz' ? undefined : true,
     attribution: def.type === 'xyz' ? '' : IGN_ATTR,
     keepBuffer: 4,
+    ...(def.clip ? { bounds: L.latLngBounds(def.clip) } : {}),
     ...extra,
   });
 }
@@ -72,13 +73,14 @@ map.on('moveend', () => { const c = map.getCenter(); save('verdun.view', { lat: 
 map.on('zoomend', () => map.getContainer().classList.toggle('show-labels', map.getZoom() >= 15));
 map.getContainer().classList.toggle('show-labels', map.getZoom() >= 15);
 
-map.createPane('overlays').style.zIndex = 250;
-map.createPane('lidar').style.zIndex = 300;
+// Stacking: base map, then LiDAR, then historical overlays on top (each with its own opacity).
+map.createPane('lidar').style.zIndex = 250;
+map.createPane('overlays').style.zIndex = 300;
 
 const baseLayers = { satellite: makeLayer(BASES.satellite), plan: makeLayer(BASES.plan) };
 const lidarLayer = makeLayer(LIDAR, { pane: 'lidar' });
 const overlayLayers = {};
-OVERLAYS.forEach((o) => { overlayLayers[o.id] = makeLayer(o, { pane: 'overlays' }); });
+OVERLAYS.forEach((o, i) => { overlayLayers[o.id] = makeLayer(o, { pane: 'overlays', zIndex: i + 1 }); });
 
 function applyLayers() {
   const op = state.lidar;
@@ -117,7 +119,12 @@ document.querySelectorAll('input[name=base]').forEach((r) => {
 function buildOverlayList() {
   const box = $('#overlayList'); box.innerHTML = '';
   if (!OVERLAYS.length) { box.innerHTML = '<p class="hint">None configured.</p>'; return; }
+  let group = null;
   for (const o of OVERLAYS) {
+    if (o.group && o.group !== group) {
+      group = o.group;
+      const h = document.createElement('h4'); h.className = 'overlay-group'; h.textContent = group; box.appendChild(h);
+    }
     const s = (state.overlays[o.id] ??= { on: false, opacity: o.opacity ?? 1 });
     const row = document.createElement('div'); row.className = 'overlay-row';
     row.innerHTML = `<input type="checkbox" ${s.on ? 'checked' : ''}><span>${esc(o.name)}</span>
@@ -437,9 +444,18 @@ function tileRange(bounds, z) {
 }
 
 function plan() {
-  const bounds = dlBounds(), maxZ = +$('#dlZoom').value, jobs = [];
+  const area = dlBounds(), maxZ = +$('#dlZoom').value, jobs = [];
   let total = 0, mb = 0;
   for (const d of dlDefs.filter((x) => x.checked)) {
+    // Clipped layers only exist inside their area: download the overlap only.
+    let bounds = area;
+    if (d.clip) {
+      const c = L.latLngBounds(d.clip);
+      if (!c.intersects(area)) continue;
+      bounds = L.latLngBounds(
+        [Math.max(c.getSouth(), area.getSouth()), Math.max(c.getWest(), area.getWest())],
+        [Math.min(c.getNorth(), area.getNorth()), Math.min(c.getEast(), area.getEast())]);
+    }
     const z0 = Math.max(DL_MIN_ZOOM, d.minNativeZoom ?? 0), z1 = Math.min(maxZ, d.maxNativeZoom ?? 18);
     for (let z = z0; z <= z1; z++) { const r = tileRange(bounds, z); jobs.push({ d, z, r }); total += r.n; mb += (r.n * (d.kb || 30)) / 1024; }
   }
