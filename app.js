@@ -23,7 +23,7 @@ const compass = (deg) => ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'][Math.round
 
 /* ---------- layer definitions ---------- */
 const VERDUN_CENTER = [49.2055, 5.4300];
-const BATTLEFIELD = L.latLngBounds([49.14, 5.30], [49.28, 5.52]);
+const BATTLEFIELD = L.latLngBounds([49.14, 5.30], [49.29, 5.52]); // offline download area
 const IGN_ATTR = '&copy; <a href="https://geoservices.ign.fr" target="_blank" rel="noopener">IGN</a>';
 
 function ignUrl(layer, tms, format, style = 'normal') {
@@ -272,10 +272,45 @@ const SEED = [
   ['Ouvrage de Froideterre', 49.19761, 5.40312],
   ['Tranchée des Baïonnettes', 49.21408, 5.42555],
   ['Fleury devant Douaumont (destroyed village)', 49.19851, 5.42831],
-].map(([name, lat, lng]) => ({ id: uid() + name.length, name, note: 'Reference point', lat, lng, color: '#ffffff', created: Date.now() }));
+].map(([name, lat, lng], i) => ({ id: 'ref' + i, name, note: 'Reference point', lat, lng, color: '#ffffff', created: Date.now() }));
 
+// Places from the Google Maps list "Verdun" (those not already among the reference points).
+const GMAPS = [
+  ['Batterie Souville 155 MM', 49.1866563, 5.436669],
+  ['Abri-caverne Quatre Cheminées', 49.1994367, 5.4117775],
+  ["Batterie d'artillerie 5-3 du nez de Souville", 49.1985756, 5.4574603],
+  ['Ouvrage de La Laufée', 49.1890288, 5.4795946],
+  ['Fort de Belrupt', 49.1477513, 5.4351325],
+  ["Batterie de l'Hôpital", 49.184017, 5.44912],
+  ['Fort de Tavannes', 49.1813939, 5.4623706],
+  ['Fort de Souville', 49.1864708, 5.4396966],
+  ['Fort St Michel', 49.175427, 5.414676],
+  ['Belleville Fort', 49.1807183, 5.3842311],
+  ['Fontaine de la Goulette', 49.230097, 5.419695],
+  ['smthig', 49.21971, 5.443404],
+  ['Carrière', 49.2204738, 5.4525365],
+  ['Monument au 74e RI', 49.21692, 5.444289],
+  ['Unnamed point (49°12\'26.0"N 5°26\'46.6"E)', 49.207221, 5.446285],
+  ['Abri de combat LLM2', 49.172209, 5.479704],
+  ['Bois des Caurières', 49.2484595, 5.4460134],
+  ['Bois Juré', 49.28467, 5.402149],
+  ['PC du Lieutenant-colonel Driant', 49.2742309, 5.4042022],
+  ["Abri d'intervalle PC 120", 49.1997961, 5.408594],
+].map(([name, lat, lng], i) => ({ id: 'gm' + i, name, note: 'Google Maps list', lat, lng, color: '#4fb3e8', created: Date.now() }));
+
+// Built-in points are added once each: new ones appear on existing installs, and ones the
+// user deleted or edited are never brought back or overwritten.
+const BUILTIN = [...SEED, ...GMAPS];
 let points = load('verdun.points', null);
-if (!points) { points = SEED; save('verdun.points', points); }
+let seeded = load('verdun.seeded', points ? SEED.map((p) => p.id) : []);
+{
+  const fresh = BUILTIN.filter((p) => !seeded.includes(p.id));
+  if (fresh.length || !points) {
+    points = [...(points || []), ...fresh];
+    save('verdun.points', points);
+    save('verdun.seeded', BUILTIN.map((p) => p.id));
+  }
+}
 const savePoints = () => save('verdun.points', points);
 
 const pointLayer = L.layerGroup().addTo(map);
