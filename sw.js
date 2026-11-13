@@ -1,8 +1,8 @@
 // Service worker: keeps the app usable with no signal.
-// App files: served from cache instantly, refreshed in the background.
+// App files: newest version from the network when online, saved copy when offline.
 // IGN map tiles: served from the offline tile cache when downloaded, otherwise from the network.
 
-const SHELL = 'shell-v1';
+const SHELL = 'shell-v2';
 const TILES = 'tiles-v1';
 const SHELL_FILES = [
   './', 'index.html', 'style.css', 'app.js', 'overlays.js', 'manifest.webmanifest',
@@ -39,10 +39,17 @@ self.addEventListener('fetch', (e) => {
   if (url.origin === self.location.origin) {
     e.respondWith((async () => {
       const cache = await caches.open(SHELL);
+      // Network first (3 s limit) so updates show up at once; saved copy when offline or slow.
       const hit = await cache.match(req, { ignoreSearch: true });
-      const net = fetch(req).then((res) => { if (res.ok) cache.put(req, res.clone()); return res; }).catch(() => null);
-      if (hit) { e.waitUntil(net); return hit; }
-      return (await net) || new Response('Offline', { status: 503 });
+      const ac = new AbortController();
+      const timer = hit ? setTimeout(() => ac.abort(), 3000) : null;
+      try {
+        const res = await fetch(req.url, { cache: 'no-cache', signal: ac.signal });
+        if (res.ok) cache.put(req, res.clone());
+        return res;
+      } catch {
+        return hit || new Response('Offline', { status: 503 });
+      } finally { clearTimeout(timer); }
     })());
   }
 });
