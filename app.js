@@ -34,19 +34,26 @@ function ignUrl(layer, tms, format, style = 'normal') {
 
 const BASES = {
   satellite: { id: 'satellite', name: 'Satellite', url: ignUrl('ORTHOIMAGERY.ORTHOPHOTOS', 'PM_0_19', 'image/jpeg'), maxNativeZoom: 19, kb: 20 },
-  // 1916 base maps: a Verdun Nord sheet with the Fort Douaumont trench map drawn on top.
-  // `stack` lists overlay ids from overlays.js, bottom first.
-  fronts1916: { id: 'fronts1916', name: '1916 fronts', stack: ['fronts20k', 'fortdouaumont'] },
-  defences1916: { id: 'defences1916', name: '1916 defences', stack: ['defences20k', 'fortdouaumont'] },
+  // 1916 base maps reuse entries of overlays.js (by id).
+  douaumont: { id: 'douaumont', name: 'Douaumont 1916', overlay: 'douaumont' },
+  fronts1916: { id: 'fronts1916', name: '1916 fronts', overlay: 'fronts20k' },
 };
 const LIDAR = { id: 'lidar', name: 'LiDAR relief', url: ignUrl('IGNF_LIDAR-HD_MNT_ELEVATION.ELEVATIONGRIDCOVERAGE.SHADOW', 'PM_0_18', 'image/png'), maxNativeZoom: 18, kb: 60 };
 
-const OVERLAYS = (window.HISTORIC_OVERLAYS || []).map((o) => ({
+const withUrl = (o) => ({
   ...o,
   url: o.type === 'wmts' ? ignUrl(o.layer, o.tms, o.format, o.style) : o.url,
-}));
+  parts: o.parts && o.parts.map(withUrl),
+});
+const OVERLAYS = (window.HISTORIC_OVERLAYS || []).map(withUrl);
 
 function makeLayer(def, extra = {}) {
+  if (def.type === 'stack') {
+    // Several sheets behaving as one layer; parts are drawn in order (last on top).
+    const group = L.layerGroup(def.parts.map((p, i) => makeLayer(p, { ...extra, zIndex: (extra.zIndex || 0) + i })));
+    group.setOpacity = (v) => group.eachLayer((l) => l.setOpacity(v));
+    return group;
+  }
   if (def.type === 'image') return L.imageOverlay(def.url, def.bounds, { opacity: def.opacity ?? 1, ...extra });
   return L.tileLayer(def.url, {
     maxZoom: 21,
@@ -82,13 +89,11 @@ map.createPane('overlays').style.zIndex = 300;
 
 const baseLayers = {};
 for (const b of Object.values(BASES)) {
-  baseLayers[b.id] = b.stack
-    ? L.layerGroup(b.stack.map((id, i) => makeLayer(OVERLAYS.find((o) => o.id === id), { zIndex: i + 1 })))
-    : makeLayer(b);
+  baseLayers[b.id] = makeLayer(b.overlay ? OVERLAYS.find((o) => o.id === b.overlay) : b, { zIndex: 1 });
 }
 const lidarLayer = makeLayer(LIDAR, { pane: 'lidar' });
 const overlayLayers = {};
-OVERLAYS.forEach((o, i) => { overlayLayers[o.id] = makeLayer(o, { pane: 'overlays', zIndex: i + 1 }); });
+OVERLAYS.forEach((o, i) => { overlayLayers[o.id] = makeLayer(o, { pane: 'overlays', zIndex: (i + 1) * 10 }); });
 
 function applyLayers() {
   const op = state.lidar;
@@ -453,7 +458,7 @@ function tileRange(bounds, z) {
 function plan() {
   const area = dlBounds(), maxZ = +$('#dlZoom').value, jobs = [];
   let total = 0, mb = 0;
-  for (const d of dlDefs.filter((x) => x.checked)) {
+  for (const d of dlDefs.filter((x) => x.checked).flatMap((x) => x.parts || [x])) {
     // Clipped layers only exist inside their area: download the overlap only.
     let bounds = area;
     if (d.clip) {
