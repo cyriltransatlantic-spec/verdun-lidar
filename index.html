@@ -51,14 +51,14 @@
 <!-- Layers sheet -->
 <section id="sheetLayers" class="sheet hidden">
   <header><h2>Layers</h2><button class="close" data-close>&times;</button></header>
-  <h3>Base map under the LiDAR</h3>
+  <h3>Base map under the LiDAR</h3><!-- order: base, LiDAR, overlays -->
   <div class="radios">
     <label><input type="radio" name="base" value="satellite"> Satellite (IGN aerial photos)</label>
     <label><input type="radio" name="base" value="plan"> IGN map</label>
   </div>
   <h3>Historical overlays</h3>
   <div id="overlayList"></div>
-  <p class="hint">To add a WWI trench map, see <code>overlays.js</code>.</p>
+  <p class="hint">Overlays draw on top of the LiDAR. Use each slider to see through them. To add your own scanned map, see <code>overlays.js</code>.</p>
   <p class="hint">Data: IGN Géoplateforme (LiDAR HD, BD ORTHO, Plan IGN, historical maps). Open Licence 2.0.</p>
 </section>
 
