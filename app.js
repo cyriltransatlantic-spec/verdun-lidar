@@ -34,9 +34,8 @@ function ignUrl(layer, tms, format, style = 'normal') {
 
 const BASES = {
   satellite: { id: 'satellite', name: 'Satellite', url: ignUrl('ORTHOIMAGERY.ORTHOPHOTOS', 'PM_0_19', 'image/jpeg'), maxNativeZoom: 19, kb: 20 },
-  // 1916 base maps reuse entries of overlays.js (by id).
-  douaumont: { id: 'douaumont', name: 'Douaumont 1916', overlay: 'douaumont' },
-  fronts1916: { id: 'fronts1916', name: '1916 fronts', overlay: 'fronts20k' },
+  // The 1916 base map reuses an entry of overlays.js (by id).
+  military1916: { id: 'military1916', name: '1916 map', overlay: 'military1916' },
 };
 const LIDAR = { id: 'lidar', name: 'LiDAR relief', url: ignUrl('IGNF_LIDAR-HD_MNT_ELEVATION.ELEVATIONGRIDCOVERAGE.SHADOW', 'PM_0_18', 'image/png'), maxNativeZoom: 18, kb: 60 };
 
