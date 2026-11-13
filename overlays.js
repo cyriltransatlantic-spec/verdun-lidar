@@ -26,16 +26,16 @@ function ww1(id, name, layer, tms, maxNativeZoom, extent) {
 }
 
 window.HISTORIC_OVERLAYS = [
-  ww1('fronts20k', 'Verdun Nord: French fronts, 21 to 26 February 1916', 'GEOGRAPHICALGRIDSYSTEMS.EDUGEO.VERDUN_NORD_fronts_francais_20K', 'PM_6_16', 16, [[49.168, 5.29434], [49.3036, 5.58034]]),
-
-  // Two sheets shown as one map. `parts` are drawn in order, so the fort sheet is on top.
+  // Three sheets shown as one military map. `parts` are drawn in order: Verdun Nord at the
+  // bottom, Douaumont surroundings above it, the fort sheet on top.
   {
-    id: 'douaumont',
-    name: 'Douaumont 1916: surroundings (April) + fort trenches (18 May)',
+    id: 'military1916',
+    name: 'Military map 1916 (Verdun Nord fronts, Douaumont, fort trenches)',
     group: WW1,
     type: 'stack',
     opacity: 0.65,
     parts: [
+      ww1('fronts20k', 'Verdun Nord: French fronts, 21 to 26 February 1916', 'GEOGRAPHICALGRIDSYSTEMS.EDUGEO.VERDUN_NORD_fronts_francais_20K', 'PM_6_16', 16, [[49.168, 5.29434], [49.3036, 5.58034]]),
       ww1('douaumont1916', 'Douaumont and surroundings, April 1916', 'GEOGRAPHICALGRIDSYSTEMS.EDUGEO.Douaumont1916', 'PM_6_17', 17, [[49.1519, 5.38761], [49.2326, 5.49243]]),
       ww1('fortdouaumont', 'Fort Douaumont, 18 May 1916 (1:5,000)', 'GEOGRAPHICALGRIDSYSTEMS.DOUAUMONT_FORT_positions_5K_18mai1916', 'PM_6_17', 17, [[49.2064, 5.42696], [49.2229, 5.45493]]),
     ],
