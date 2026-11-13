@@ -34,7 +34,10 @@ function ignUrl(layer, tms, format, style = 'normal') {
 
 const BASES = {
   satellite: { id: 'satellite', name: 'Satellite', url: ignUrl('ORTHOIMAGERY.ORTHOPHOTOS', 'PM_0_19', 'image/jpeg'), maxNativeZoom: 19, kb: 20 },
-  plan: { id: 'plan', name: 'IGN map', url: ignUrl('GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2', 'PM_0_19', 'image/png'), maxNativeZoom: 19, kb: 15 },
+  // 1916 base maps: a Verdun Nord sheet with the Fort Douaumont trench map drawn on top.
+  // `stack` lists overlay ids from overlays.js, bottom first.
+  fronts1916: { id: 'fronts1916', name: '1916 fronts', stack: ['fronts20k', 'fortdouaumont'] },
+  defences1916: { id: 'defences1916', name: '1916 defences', stack: ['defences20k', 'fortdouaumont'] },
 };
 const LIDAR = { id: 'lidar', name: 'LiDAR relief', url: ignUrl('IGNF_LIDAR-HD_MNT_ELEVATION.ELEVATIONGRIDCOVERAGE.SHADOW', 'PM_0_18', 'image/png'), maxNativeZoom: 18, kb: 60 };
 
@@ -59,7 +62,7 @@ function makeLayer(def, extra = {}) {
 
 /* ---------- map ---------- */
 const state = load('verdun.state', {});
-state.base ??= 'satellite';
+if (!BASES[state.base]) state.base = 'satellite';
 state.lidar ??= 1;
 state.overlays ??= {};
 
@@ -77,7 +80,12 @@ map.getContainer().classList.toggle('show-labels', map.getZoom() >= 15);
 map.createPane('lidar').style.zIndex = 250;
 map.createPane('overlays').style.zIndex = 300;
 
-const baseLayers = { satellite: makeLayer(BASES.satellite), plan: makeLayer(BASES.plan) };
+const baseLayers = {};
+for (const b of Object.values(BASES)) {
+  baseLayers[b.id] = b.stack
+    ? L.layerGroup(b.stack.map((id, i) => makeLayer(OVERLAYS.find((o) => o.id === id), { zIndex: i + 1 })))
+    : makeLayer(b);
+}
 const lidarLayer = makeLayer(LIDAR, { pane: 'lidar' });
 const overlayLayers = {};
 OVERLAYS.forEach((o, i) => { overlayLayers[o.id] = makeLayer(o, { pane: 'overlays', zIndex: i + 1 }); });
@@ -420,7 +428,6 @@ const DL_MIN_ZOOM = 10;
 const dlDefs = [
   { ...BASES.satellite, checked: true },
   { ...LIDAR, checked: true },
-  { ...BASES.plan, checked: false },
   ...OVERLAYS.filter((o) => o.type !== 'image').map((o) => ({ ...o, checked: false })),
 ];
 (function buildDlLayers() {
